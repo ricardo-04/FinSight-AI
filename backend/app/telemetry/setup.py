@@ -1,13 +1,30 @@
+import logging
+import os
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+logger = logging.getLogger(__name__)
+
+_OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+
 
 def setup_telemetry(app):
     provider = TracerProvider()
-    provider.add_span_processor(
-        BatchSpanProcessor(OTLPSpanExporter(endpoint="http://otel-collector:4317"))
-    )
+
+    if _OTEL_ENDPOINT:
+        try:
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+            provider.add_span_processor(
+                BatchSpanProcessor(OTLPSpanExporter(endpoint=_OTEL_ENDPOINT))
+            )
+            logger.info("OTEL tracing enabled: endpoint=%s", _OTEL_ENDPOINT)
+        except Exception as e:
+            logger.warning("Failed to configure OTEL exporter: %s", e)
+    else:
+        logger.info("OTEL tracing disabled (no OTEL_EXPORTER_OTLP_ENDPOINT set)")
+
     trace.set_tracer_provider(provider)
     FastAPIInstrumentor.instrument_app(app)
