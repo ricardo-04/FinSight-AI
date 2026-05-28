@@ -1,146 +1,52 @@
-# Project Copilot Configuration
+# .github - FinSight AI
 
-This folder contains the GitHub Copilot configuration for the project.
-It is the **single source of truth** for all AI agent instructions, personas,
-skills, prompts, workflows, output artifacts, and templates.
+This directory contains all GitHub Copilot customizations for the FinSight AI project.
 
----
-
-## Reading Order
-
-| Audience | Start here | Then read |
-|---|---|---|
-| New to the project | `GETTING_STARTED.md` | `copilot-instructions.md` |
-| Existing developer | `copilot-instructions.md` | Relevant `instructions/*.instructions.md` |
-| Admin or customizer | `constitution.md` | `agents/`, `personas/`, `skills/` |
-
-Key precedence: `constitution.md` overrides all other files where they conflict.
-
----
-
-## Requirements
-
-- Visual Studio Code
-- GitHub Copilot extension
-- GitHub Copilot Chat extension
-
----
-
-## What is in this folder
-
-| Folder / File | Purpose |
-|---|---|
-| `agents/` | Custom agent definitions for each technology domain |
-| `agents/branch-creator.agent.md` | Thin branch creation facade over `scripts/new-branch.ps1` |
-| `agents/commit-agent.agent.md` | Thin commit facade over the Commit Preparation skill |
-| `agents/project-manager.agent.md` | Entry point - routes every request to the correct agent |
-| `agents/story-*.agent.md` | Lifecycle agents for cross-cutting stories |
-| `agents/frontend/` | React frontend agents |
-| `agents/backend/` | Python FastAPI backend agents |
-| `agents/devops/` | DevOps and deployment infrastructure agents |
-| `agents/pull-request-reviewer.agent.md` | Assisted Azure DevOps pull request review |
-| `agents/general-purpose.agent.md` | Scripts, file manipulation, utility tasks |
-| `instructions/` | File-scoped coding conventions loaded by VS Code |
-| `personas/` | Role definitions used by agents |
-| `skills/` | Reusable knowledge packages loaded on demand |
-| `templates/` | Document templates for ADRs, PRs, feature specs |
-| `prompts/` | Reusable prompt files invocable from Copilot Chat |
-| `copilot-outputs/` | Required AI phase output and test-evidence artifacts |
-| `constitution.md` | Non-negotiable project rules |
-| `copilot-instructions.md` | Main configuration |
-| `git-commit-instructions.md` | Commit message format |
-| `CODEOWNERS` | Maps modules to responsible teams |
-
----
-
-## Skill Portfolio
-
-| Skill | Use |
-|---|---|
-| `adr-writer` | Produce ADRs for significant architecture decisions |
-| `confirmed-terminal` | Apply the user approval gate before terminal commands |
-| `commit-preparation` | Prepare a safe git commit with local checks |
-| `azure-devops-pr-create` | Create Azure DevOps pull requests safely |
-| `azure-devops-pr-review` | Review assigned Azure DevOps pull requests |
-| `dependency-update` | Update Python and npm dependencies with audit checks |
-| `framework-fetcher` | Verify version-specific framework APIs and deprecations |
-| `requirements-to-tests` | Map acceptance criteria to tests and coverage gaps |
-| `ai-prompt-contract-design` | Design structured runtime AI prompt output contracts |
-
----
-
-## How to use
-
-### Starting a task
-
-Open Copilot Chat in Agent mode and select **Project Manager**. Type your
-request and it will route to the correct orchestrator.
-
-Examples:
+## Structure
 
 ```
-Add a new REST endpoint to return opportunity statistics
+.github/
+  copilot-instructions.md    - global Copilot behavior guidance
+  constitution.md            - non-negotiable project rules
+  git-commit-instructions.md - conventional commit format
+  agents/
+    project-manager.agent.md          - task routing entry point
+    general-purpose.agent.md          - utility and infrastructure tasks
+    story-orchestrator.agent.md       - cross-cutting story lifecycle
+    story-architect.agent.md          - architecture assessment and ADR
+    story-planner.agent.md            - implementation planning
+    story-implementer.agent.md        - code and test implementation
+    story-qa-review.agent.md          - QA review and release readiness
+    backend/
+      python-fastapi-orchestrator.agent.md
+      python-fastapi-planner.agent.md
+      python-fastapi-implementer.agent.md
+      python-fastapi-qa.agent.md
+    frontend/
+      nextjs-orchestrator.agent.md
+      nextjs-planner.agent.md
+      nextjs-implementer.agent.md
+      nextjs-qa.agent.md
+  instructions/
+    python-fastapi-backend.instructions.md  - backend conventions
+    nextjs-frontend.instructions.md         - frontend conventions
+    ai-rag.instructions.md                  - AI and RAG conventions
+    devops-deployment.instructions.md       - Docker Compose conventions
+    security.instructions.md               - OWASP security rules
+    tests.instructions.md                  - testing conventions
+    git-workflow.instructions.md           - branching and commit rules
+  skills/
+    confirmed-terminal/    - user-confirmation gate for shell commands
+    commit-preparation/    - safe conventional commit workflow
+  copilot-outputs/         - agent output logs (auto-generated)
 ```
 
-```
-Create a new React screen for template management
-```
+## Quick Start
 
-```
-Update docker-compose.yml to add a new service
-```
+For any task, invoke the **Project Manager** agent - it will route your request to the correct domain agent.
 
-### The 4-phase pipeline
-
-Every task follows this pipeline automatically:
-
-```
-Phase 1: Architecture  (Architect agent assesses ADR need)
-         |
-         | You review and approve
-         v
-Phase 2: Planning  (Planner agent produces implementation plan)
-         |
-         | You review and approve
-         v
-Phase 3: Development  (Implementer agent writes code and tests)
-         |
-         v
-Phase 4: QA Review  (QA agent validates against acceptance criteria)
-```
-
-At each approval gate the agent pauses and waits for your confirmation.
-
-### Implementing an existing user story
-
-For the full existing-story flow, see
-[GETTING_STARTED.md](GETTING_STARTED.md#implementing-an-existing-user-story).
-
-Daily sequence:
-
-```text
-Branch Creator
-  -> Story Orchestrator
-  -> local preflight
-  -> Commit Agent
-  -> push branch
-  -> Azure DevOps PR Create skill
-  -> Pull Request Reviewer
-  -> human merge
-```
-
----
-
-## VS Code Configuration
-
-Enable Agent mode in VS Code settings:
-
-```json
-{
-  "chat.agent.enabled": true,
-  "github.copilot.chat.agent.thinkingTool": true
-}
-```
-
-Select **Project Manager** from the agent selector in the Copilot Chat panel
-to activate the full pipeline.
+For single-domain tasks, invoke the domain orchestrator directly:
+- Backend work: **Python FastAPI Orchestrator**
+- Frontend work: **Next.js Orchestrator**
+- Cross-cutting: **Story Orchestrator**
+- Infrastructure: **General Purpose Agent**

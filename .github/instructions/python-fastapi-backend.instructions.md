@@ -6,147 +6,114 @@ applyTo: "backend/**"
 
 ## Project Overview
 
-Python 3.11 FastAPI backend providing REST API endpoints for the SalesMate
-platform. Uses SQLAlchemy 2 for ORM, Alembic for migrations, PostgreSQL
-with pgvector for persistence, boto3 for S3-compatible object storage
-(RustFS), and PyJWT for Keycloak token validation.
+Python 3.11 FastAPI backend for FinSight AI. Provides REST endpoints for PDF upload, financial metric extraction, RAG-based chat, and document management. Uses SQLAlchemy 2 and asyncpg for async PostgreSQL access, pgvector for similarity search, PydanticAI for LLM agent orchestration, and PyMuPDF for PDF parsing.
 
 ## Tech Stack
 
-- **Language**: Python 3.11
-- **Framework**: FastAPI
-- **ORM**: SQLAlchemy 2
-- **Migrations**: Alembic
-- **Validation**: Pydantic (via FastAPI)
-- **Auth**: PyJWT with Keycloak JWKS validation
-- **Storage**: boto3 (S3-compatible RustFS)
-- **Database**: PostgreSQL 16 with pgvector extension
-- **Settings**: pydantic-settings
-- **Server**: uvicorn
-- **Testing**: Not yet configured (recommend pytest + httpx)
+| Component | Library / Version |
+|---|---|
+| Language | Python 3.11 |
+| Framework | FastAPI |
+| ORM | SQLAlchemy 2 (async) |
+| Database driver | asyncpg |
+| Validation | Pydantic v2 |
+| AI agents | PydanticAI |
+| LLM client | openai (OpenAI-compatible) |
+| PDF parsing | PyMuPDF (fitz) |
+| Vector store | pgvector |
+| Observability | OpenTelemetry |
+| Testing | pytest + pytest-asyncio + httpx |
 
 ## Key Commands
 
 ```bash
 cd backend
-uv sync                                        # install all dependencies
-uv sync --group dev                            # install with dev dependencies
-uv run alembic upgrade head                    # run database migrations
-uv run uvicorn app.main:app --reload           # start dev server on port 8000
-uv run alembic revision --autogenerate -m "description"  # create migration
-uv run pytest                                  # run tests
+pip install -r requirements.txt
+uvicorn app.main:app --reload         # start dev server on port 8000
+pytest                                 # run tests
 ```
 
 ## Project Structure
 
 ```
-backend/
-  app/
-    main.py              # FastAPI app, lifespan, CORS middleware
-    api/
-      routes.py          # API router with all endpoint definitions
-      dependencies/
-        auth.py          # JWT/Keycloak authentication dependency
-    core/
-      config.py          # Settings via pydantic-settings
-    db/
-      base.py            # SQLAlchemy declarative base
-      models.py          # ORM model definitions
-      session.py         # Database session factory
-    services/
-      opportunities.py   # Business logic for opportunities
-      rustfs.py          # RustFS/S3 storage integration
-  alembic/
-    env.py               # Alembic environment configuration
-    versions/            # Migration version scripts
-  alembic.ini            # Alembic configuration
-  pyproject.toml         # Project metadata and dependencies
-  Dockerfile             # Container image definition
+backend/app/
+  main.py              - FastAPI app, CORS middleware, router registration
+  agents/
+    extraction_agent.py  - structured metric extraction via LLM
+    research_agent.py    - RAG-based Q&A with citations
+    comparison_agent.py  - multi-document comparison
+  api/
+    health.py            - GET /health
+    upload.py            - POST /api/upload
+    extract.py           - POST /api/extract
+    chat.py              - POST /api/chat
+  db/
+    base.py              - SQLAlchemy declarative base
+    session.py           - async session factory
+  models/
+    document.py          - Document ORM model
+    metrics.py           - FinancialMetrics ORM model
+  parsing/
+    pdf_parser.py        - PyMuPDF PDF-to-markdown parser
+    chunker.py           - text chunker with configurable size and overlap
+  rag/
+    embeddings.py        - embedding generation (OpenAI embeddings API)
+    pipeline.py          - end-to-end ingest pipeline
+    retrieval.py         - pgvector similarity retrieval
+  services/
+    document_service.py  - document CRUD and processing orchestration
+    llm_provider.py      - LLM provider abstraction (OpenAI / NVIDIA NIM / Ollama)
+  telemetry/
+    setup.py             - OpenTelemetry SDK setup
+  tools/
+    calculator.py        - financial calculator tool
+    sec_fetch.py         - SEC EDGAR document fetcher
+    vector_search.py     - vector search tool for agents
 ```
 
 ## Python Conventions
 
-- Follow PEP 8 naming: snake_case for functions, variables, modules;
-  PascalCase for classes; UPPER_SNAKE_CASE for constants
-- Type hints on all function signatures
-- Docstrings on public functions and classes (Google style)
-- No wildcard imports; import specific names
-- Remove unused imports after every change
-- Use `logging` module: `logger = logging.getLogger(__name__)`
-- Never log credentials, tokens, or PII
-- No placeholder variable names (`foo`, `bar`, `temp`, `data`, etc.)
+- PEP 8 naming: `snake_case` for functions, variables, modules; `PascalCase` for classes; `UPPER_SNAKE_CASE` for constants.
+- Type hints on all function signatures - mandatory.
+- Docstrings on all public functions and classes (Google style).
+- No wildcard imports; import specific names.
+- Remove unused imports after every change.
+- Use `logging` module: `logger = logging.getLogger(__name__)`.
+- Never log credentials, tokens, API keys, or PII.
+- No placeholder variable names (`foo`, `bar`, `temp`, `data`).
 
 ## FastAPI Conventions
 
-- Single APIRouter in `app/api/routes.py` mounted on the app
-- Use `Depends()` for dependency injection (auth, db sessions)
-- Business logic in `app/services/` - route handlers are thin
-- Request/response validation via Pydantic models
-- Use appropriate HTTP status codes (201 for creation, 404 for not found)
-- Async endpoints for I/O operations
+- All request and response bodies use Pydantic v2 models.
+- All route handlers are `async def`.
+- HTTP status codes: 200 for success, 201 for creation, 400 for client errors, 422 for validation errors, 500 for server errors.
+- Use `HTTPException` with clear detail messages for error responses - never expose stack traces.
+- Router files define a single `router = APIRouter()` and are registered in `main.py`.
 
-## SQLAlchemy Conventions
+## Database Conventions
 
-- Declarative models inherit from `Base` in `app/db/base.py`
-- Use `mapped_column()` with explicit types (SQLAlchemy 2 style)
-- Relationships defined with `relationship()` and `ForeignKey`
-- Session management via `SessionLocal` factory in `app/db/session.py`
-- Never construct SQL via string concatenation; use ORM or parameterized
-  queries only
+- Use async SQLAlchemy sessions from `db/session.py`.
+- Never use `session.execute(text(...))` with string interpolation.
+- Use ORM models defined in `models/` for all database interactions.
+- Database access belongs in service layer (`services/`), not in route handlers.
 
-## Alembic Migration Conventions
+## AI Agent Conventions
 
-- Auto-generate migrations when models change
-- Migration message must describe the change concisely
-- Always review auto-generated migrations before committing
-- Migration filenames follow the pattern: `NNNN_description.py`
-- Test migrations in both directions (upgrade and downgrade)
+- All LLM calls must go through `services/llm_provider.py`. Never call the OpenAI client directly outside that module.
+- Use PydanticAI's structured output to validate LLM responses against Pydantic models.
+- Sanitize all user-provided text before constructing LLM prompts (strip control characters, limit length).
+- Agent tools must be registered via PydanticAI's `@agent.tool` decorator.
+- All agent runs must emit an OpenTelemetry span.
 
-## Configuration Conventions
+## RAG Conventions
 
-- All configuration via `pydantic-settings` in `app/core/config.py`
-- Environment variables for all values that change per environment
-- Never hardcode database URLs, credentials, or service endpoints
-- Use `${VAR:-default}` pattern in Docker for optional overrides
+- Embeddings are always generated through `rag/embeddings.py`.
+- Chunk configuration (size, overlap) comes from environment variables, never hardcoded.
+- Retrieval results must include document ID and chunk index for citation purposes.
 
-## Authentication Conventions
+## Security Rules
 
-- JWT validation in `app/api/dependencies/auth.py`
-- Fetch JWKS from Keycloak for signature verification
-- Validate `iss`, `aud`, and `exp` claims
-- Extract user roles from token claims
-- Never validate tokens with string operations; use PyJWT library
-
-## RustFS/S3 Storage Conventions
-
-- Use boto3 with custom endpoint URL for RustFS
-- Bucket bootstrap in `app/services/rustfs.py` at startup
-- Configure endpoint via `RUSTFS_ENDPOINT` environment variable
-- Use bucket/object prefixes for organizing opportunity files
-
-## Security
-
-- Follow OWASP Top 10 guidelines
-- Never log sensitive data (tokens, passwords, PII)
-- Validate and sanitize all external input at API boundaries
-- Use Pydantic for input validation (automatic via FastAPI)
-- Never hardcode secrets; always read from environment variables
-- SQL injection prevention: use ORM or parameterized queries only
-
-## Output Logging
-
-After every implementation or QA review, create a Markdown file in
-`.github/copilot-outputs/` named `<BranchName>-python-<phase>-output.md`.
-If the file exists, create a versioned copy: `-v2.md`, `-v3.md`, etc.
-The file must include: phase run, changed files, commands executed, and
-results.
-
-## Development Pipeline
-
-Every task must follow this pipeline:
-1. Architecture phase - produce a clear design decision
-2. Development phase - implement following the architectural decision
-3. QA Review phase - validate quality and release readiness
-
-Use the Python FastAPI Orchestrator agent for end-to-end story
-implementation.
+- All API inputs must be validated by Pydantic models at the route boundary.
+- File uploads: validate MIME type and file size before processing.
+- Never store raw user input in the database without sanitization.
+- Environment variables for all secrets (`OPENAI_API_KEY`, `DATABASE_URL`, etc.).

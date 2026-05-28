@@ -2,139 +2,62 @@
 applyTo: "**"
 ---
 
-# Instructions - Security
+# Instructions - Security (OWASP)
 
-## Scope
+## Overview
 
-These rules apply to every module in the project: Python FastAPI backend,
-React frontend, Docker Compose deployment, and all infrastructure
-components. Security is non-negotiable and must be addressed in every
-change that touches network communication, credentials, authentication,
-or data handling.
+All code in FinSight AI must comply with the OWASP Top 10. These rules apply to both backend and frontend layers.
 
----
+## A01 - Broken Access Control
 
-## General Principles
+- All API endpoints that return user-specific or document-specific data must verify the caller has permission to access that resource.
+- Never rely on client-supplied IDs without server-side ownership validation.
 
-- **Never hardcode credentials, passwords, key material, or tokens** in
-  source files, configuration templates, or Dockerfiles. Always read them
-  from environment variables or Docker secrets at runtime.
-- **Never log credentials, tokens, PII, or key material.** Apply this rule
-  in every `logger.*` call in Python and every `console.*` call in the
-  frontend.
-- **OWASP Top 10 compliance is required** for all production code.
-- **Never commit `.env` files.** Ensure `.env` is in `.gitignore`.
-- **Never disable TLS certificate verification** in production code
-  (`verify=False` in httpx/requests, `"secure": false` in proxy config).
+## A02 - Cryptographic Failures
 
----
+- Never store plaintext secrets; use environment variables loaded at runtime.
+- Use HTTPS in production. The Docker Compose dev setup is HTTP only and must never be exposed publicly.
+- Sensitive data at rest (document content, extracted metrics) should be stored in the database, not in logs or files.
 
-## FastAPI Backend - Authentication and Authorization
+## A03 - Injection
 
-- Use OAuth 2.0 Authorization Code Flow with PKCE for browser clients.
-  Never use the Implicit Flow.
-- Validate the JWT signature, `iss`, `aud`, and `exp` claims in every
-  protected endpoint. Use `python-jose` or `PyJWT` with JWKS fetching.
-- Never validate tokens manually with string operations; always use a
-  proper JWT library.
-- Store tokens only in memory on the frontend. Never in `localStorage`
-  for tokens with long expiry.
-- Use FastAPI `Depends()` for auth injection. Never check auth inline in
-  route handlers.
+- Never build SQL queries by string concatenation with user input. Use SQLAlchemy ORM or parameterized queries.
+- LLM prompts: sanitize user text before injection into prompts (see `ai-rag.instructions.md`).
+- File uploads: validate MIME type and extension; never execute uploaded content.
 
----
+## A04 - Insecure Design
 
-## FastAPI Backend - Input Validation
+- The extraction and RAG agents operate on user-uploaded PDFs. Assume PDFs may be malformed or malicious; catch and log parsing exceptions; never propagate raw parser errors to the API response.
+- Limit file upload size via FastAPI's `UploadFile` and reject oversized files before processing.
 
-- Validate all inputs at the system boundary using Pydantic models.
-- Never construct SQL queries by concatenating user-supplied strings.
-  Use SQLAlchemy ORM or parameterized queries exclusively.
-- Use `@validator` or `@field_validator` for complex validation logic.
-- Apply `max_length`, `ge`, `le`, and `regex` constraints on Pydantic
-  fields for all user-facing inputs.
+## A05 - Security Misconfiguration
 
----
+- CORS is restricted to `http://localhost:3000` in development. Production origins must be explicitly listed.
+- Debug endpoints (if any) must be disabled in production via environment variable.
+- Do not enable FastAPI's automatic OpenAPI UI (`/docs`, `/redoc`) in production without authentication.
 
-## FastAPI Backend - HTTPS and CORS
+## A06 - Vulnerable and Outdated Components
 
-- Configure CORS with explicit allowed origins. Never use `allow_origins=["*"]`
-  in production.
-- In production, run behind a TLS-terminating reverse proxy (e.g., Nginx,
-  Traefik). The backend itself may listen on HTTP internally.
-- Set `Secure`, `HttpOnly`, and `SameSite=Strict` on any cookies.
+- Pin all dependency versions in `requirements.txt` and `package.json`.
+- Review third-party library changelogs before upgrading major versions.
 
----
+## A07 - Identification and Authentication Failures
 
-## React Frontend - Content Security
+- API keys (`OPENAI_API_KEY`, etc.) must never appear in logs, responses, or error messages.
+- If authentication is added in the future, use short-lived tokens and validate on every request.
 
-- Never use `dangerouslySetInnerHTML` with unvalidated data.
-- Use React's built-in JSX escaping for all dynamic content.
-- Add a `Content-Security-Policy` HTTP response header in production:
-  - Disallow `unsafe-inline` scripts.
-  - Restrict `connect-src` to the API gateway host.
-  - Set `upgrade-insecure-requests`.
-- Never attach tokens via URL query parameters.
-- Store tokens only in memory (React state/context) or `sessionStorage`.
-- Do not set `"secure": false` in `proxy.conf.json` or Vite proxy config
-  in non-local environments.
+## A08 - Software and Data Integrity Failures
 
----
+- Validate the structure and content of LLM responses before persisting them to the database.
+- Do not execute or eval any LLM-generated code.
 
-## Docker Compose - Security Configuration
+## A09 - Security Logging and Monitoring Failures
 
-- Mount secrets into containers via read-only volumes or environment
-  variables from a `.env` file that is NOT committed to git.
-- All inter-service communication within the Compose network should use
-  internal Docker networking. Only expose ports that need external access.
-- Keycloak must be deployed with HTTPS enabled via `KC_HTTPS_*`
-  environment variables in production.
-- Pin every `FROM` directive to a specific version tag. Never use `:latest`.
+- Log all failed upload attempts (wrong MIME type, size exceeded) at WARNING level with document ID (not content).
+- Log all agent errors at ERROR level with span trace ID for correlation.
+- Never log the full request body; log only safe metadata (file name, size, document ID).
 
----
+## A10 - Server-Side Request Forgery (SSRF)
 
-## Keycloak - Authentication and Authorization
-
-- Configure token lifetimes conservatively: access token max 5 minutes,
-  refresh token max 30 minutes for internal sessions.
-- Rotate client secrets when a secret is suspected to be exposed.
-  Store client secrets exclusively in environment variables.
-
----
-
-## Secrets and Credential Management
-
-- Define all secrets as environment variables in the deployment pipeline.
-- Never print environment variable values containing credentials in logs.
-- In Python, load secrets via `pydantic-settings` `BaseSettings` classes.
-  Validate that required settings are non-empty at startup.
-- Rotate all long-lived credentials (passwords, client secrets, API keys)
-  at least every 90 days.
-
----
-
-## Dependency Vulnerability Scanning
-
-- **Python**: run `pip audit` or `safety check` as part of the CI pipeline.
-  Fix or document all high and critical findings.
-- **Frontend**: run `npm audit --audit-level=high` as part of CI. Fix or
-  document all high and critical findings.
-- **Docker base images**: pin every `FROM` to a specific version tag.
-  Scan images with Trivy before pushing to registry.
-
----
-
-## Security Review Checklist
-
-Before marking any security-related change as complete, confirm:
-
-- [ ] No credentials, tokens, or key material appear in source code or
-      configuration templates.
-- [ ] All inputs at system boundaries are validated with Pydantic models
-      or React form validation.
-- [ ] No sensitive data is logged.
-- [ ] Dependency vulnerability scan passes with no unmitigated
-      high/critical findings.
-- [ ] OAuth 2.0 tokens are validated by a proper JWT library.
-- [ ] Docker images are pinned to a specific version.
-- [ ] CORS is configured with explicit allowed origins.
-- [ ] SQL queries use parameterized statements only.
+- The `sec_fetch` tool makes outbound HTTP requests to SEC EDGAR. The target URL must be constructed from a validated base URL constant, never from raw user input.
+- If the user can supply a URL (e.g., for document import), validate it against an allowlist of permitted hosts.

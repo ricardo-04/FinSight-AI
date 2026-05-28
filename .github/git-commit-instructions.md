@@ -1,141 +1,78 @@
-# Git Commit Instructions
-
-## Safety Rule
-
-**Never run `git commit`, `git push`, or any other git write operation
-(merge, rebase, tag, reset --hard, push --force, etc.) unless the user
-explicitly requests it in that same message.**
-
-All version control operations must be performed manually by the user after
-reviewing and testing the changes. This rule applies globally to every agent,
-task, and conversation, without exception.
-
-## Branch Naming
-
-Create branches using `scripts/new-branch.ps1` via the
-`confirmed-terminal` skill. The script enforces the rules below.
-
-### Supported branch types
-
-| Type | When to use | JiraIssue | StoryId | Title | Version |
-|---|---|---|---|---|---|
-| `feature` | New functionality (default) | required | required | required | - |
-| `bugfix` | Non-critical bug fixes | required | required | required | - |
-| `hotfix` | Production emergency patches | required | optional | required | - |
-| `docs` | Documentation updates | required | optional | required | - |
-| `chore` | Dependency updates, config | required | optional | required | - |
-| `refactor` | Code restructuring, no behaviour change | required | optional | required | - |
-| `test` | Test suite additions or improvements | required | optional | required | - |
-| `ci` | CI/CD pipeline changes | required | optional | required | - |
-| `perf` | Performance optimisations | required | optional | required | - |
-| `release` | Release preparation | - | - | - | required |
-
-### Branch name formats
-
-```
-# feature and bugfix - StoryId is required
-<type>/<JiraIssue>-<StoryId>-<Title-With-Proper-Casing>
-
-# hotfix, docs, chore, refactor, test, ci, perf - StoryId is optional
-<type>/<JiraIssue>-<Title-With-Proper-Casing>
-<type>/<JiraIssue>-<StoryId>-<Title-With-Proper-Casing>
-
-# release - version only
-release/<Version>
-```
-
-### Rules
-
-- `<JiraIssue>` uses the Jira issue key format `<PROJECT>-<NUMBER>`,
-  for example `AIAPMMWP1-22`.
-- `<StoryId>` uses the SalesMate story ID format `US-NNN`, for example
-  `US-020`.
-- The title uses meaningful words separated by hyphens in Proper-Case.
-- Remove bracket characters from screen references. Use `S4` instead of
-  `[S4]`.
-- `release/` and `hotfix/` branches require an explicit `-BranchType`
-  argument to the script - they are not reachable by accident.
-- `master` is always protected and cannot be targeted by the script.
-
-### Examples
-
-```
-feature/AIAPMMWP1-22-US-020-Document-Conversion-And-Rustfs-Integration-Supporting-S4
-bugfix/AIAPMMWP1-45-US-031-Fix-Login-Timeout
-hotfix/AIAPMMWP1-99-Critical-Auth-Bypass
-docs/AIAPMMWP1-50-Api-Reference-Update
-chore/AIAPMMWP1-60-Upgrade-Node-Lts
-release/1.2.0
-release/1.2.0-rc1
-```
-
-## Pull Request Defaults
-
-Use these Azure DevOps defaults unless the user gives a different value:
-
-- Target branch: `master`
-- Organization: `https://dev.azure.com/cswsalesmate`
-- Project: `SalesMate`
-- Repository: `SalesMate`
-- Reviewers:
-	- `ra-pombo@criticalsoftware.com`
-	- `pmfmonteiro@criticalsoftware.com`
-	- `dsmendes@criticalsoftware.com`
-    - `caferreira@criticalsoftware.com`
-
-Pull request titles use this format:
-
-```
-<JiraIssue> <UserStoryId>: <Human readable title>
-```
-
-Example:
-
-```
-AIAPMMWP1-22 US-020: Document conversion and RustFS integration supporting S4
-```
+# Git Commit Instructions - FinSight AI
 
 ## Commit Message Format
 
-When the user explicitly requests a commit, use the following format:
+Use Conventional Commits:
 
 ```
-<story/task ID>: <story/task description>
+<type>(<scope>): <subject>
 
-* <simple resume of a change>
-* <simple description of another change>
+[optional body]
+
+[optional footer]
 ```
 
-Rules:
-- The first line is `<ID>: <description>` with no trailing punctuation.
-- Leave exactly one blank line between the first line and the bullet list.
-- Each bullet uses a `*` prefix followed by a single space.
-- Each bullet is a concise single sentence; no sub-bullets.
-- No full stops at the end of bullet lines.
-- Do not add a sign-off, co-author, or extra metadata unless explicitly asked.
+## Types
+
+| Type | When to use |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `test` | Adding or correcting tests |
+| `docs` | Documentation only changes |
+| `chore` | Build process, dependency updates, tooling |
+| `perf` | Performance improvement |
+| `ci` | CI/CD pipeline changes |
+
+## Scopes
+
+Use one of the following scopes to identify the affected module:
+
+| Scope | Covers |
+|---|---|
+| `backend` | FastAPI app, general backend changes |
+| `agents` | extraction_agent, research_agent, comparison_agent |
+| `rag` | embeddings, pipeline, retrieval |
+| `parsing` | pdf_parser, chunker |
+| `api` | health, upload, extract, chat endpoints |
+| `db` | models, migrations, session |
+| `services` | document_service, llm_provider |
+| `tools` | calculator, sec_fetch, vector_search |
+| `telemetry` | OpenTelemetry setup |
+| `frontend` | Next.js app, components, pages |
+| `infra` | Docker Compose, Dockerfiles |
+| `docs` | Documentation files |
+| `tests` | Test files |
+
+## Rules
+
+- Subject line: imperative mood, no period, max 72 chars.
+- Body: explain WHY, not what. Wrap at 72 chars.
+- Reference tasks or issues in the footer: `Closes #123`
+- Never use the em dash; use a hyphen instead.
+- Never use ampersand; write "and" instead.
 
 ## Examples
 
-Single-change commit:
-
 ```
-AIAPMMWP1-22: Update deployment to include backend services
+feat(rag): add pgvector cosine similarity retrieval
 
-* Update default VM IP
-```
+Implements similarity search using pgvector's <=> operator.
+Replaces the previous in-memory numpy cosine computation,
+reducing memory footprint on large document sets.
 
-Multi-change commit:
-
-```
-AIAPMMWP1-22: Update deployment to include backend services
-
-* Update deployment to include backend services
-* Update default docker image of frontend
-* Fix download of config file
+Closes #42
 ```
 
-## Staged Files
+```
+fix(agents): handle empty extraction response from LLM
 
-Before composing the commit message, show the user the list of files that
-will be included (`git status --short` or `git diff --cached --name-only`)
-and wait for confirmation that the staged set is correct.
+The extraction agent previously raised an unhandled KeyError
+when the LLM returned a response missing the `revenue` field.
+Added a fallback to empty string with a warning log.
+```
+
+```
+chore(infra): pin postgres image to 16-alpine
+```

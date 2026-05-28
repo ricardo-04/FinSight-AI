@@ -1,163 +1,102 @@
 ---
 name: commit-preparation
 description: >-
-  Prepare a single git commit for SalesMate with safety checks: inspect
-  staged and unstaged changes, propose logical commit grouping, run a
-  secret deny-list scan, verify the test-evidence artifact exists, and
-  produce a commit message that follows
+  Prepare a git commit for FinSight AI with safety checks: inspect staged
+  changes, propose logical commit grouping, run a secret deny-list scan,
+  and produce a commit message that follows
   `.github/git-commit-instructions.md`. Never executes `git commit`
   without an explicit `confirmed-terminal` approval. Keywords: commit,
-  git commit, commit message, staged files, secret scan, test evidence,
-  pre-commit safety.
+  git commit, commit message, staged files, secret scan, pre-commit safety,
+  prepare commit, conventional commit.
 ---
 
 # Commit Preparation Skill
 
 ## Purpose
 
-Provide a deterministic, safety-first wrapper around `git commit` for
-the SalesMate repository. This skill compensates for the absence of a
-CI pipeline and pre-commit hooks by performing local checks before any
-commit is executed.
+A safety-first wrapper around `git commit` for the FinSight AI repository. Performs local checks before any commit is executed.
 
-This skill never runs `git commit`, `git commit --amend`,
-`git commit --no-verify`, `git push`, or any rewrite operation
-without an explicit `confirmed-terminal` approval for the exact
-command shown.
-
----
-
-## Inputs
-
-- Current branch name (read from `git rev-parse --abbrev-ref HEAD`).
-- Story or task ID (parsed from the branch name when it follows
-  `feature/<JiraIssue>-<UserStoryId>-<Title>`, otherwise asked from
-  the user).
-- Optional: user-provided list of intended logical commit groups.
+This skill never runs `git commit`, `git commit --amend`, or `git push` without an explicit `confirmed-terminal` approval for the exact command shown.
 
 ---
 
 ## Step 1: Inspect Working Tree
 
-Run, in order:
+Run, in order (with `confirmed-terminal` approval for each):
 
-1. `git status --porcelain` to enumerate staged and unstaged changes.
-2. `git diff --cached --stat` to summarise staged content.
-3. `git diff --stat` to summarise unstaged content.
+1. `git status --porcelain` - enumerate staged and unstaged changes.
+2. `git diff --cached --stat` - summarise staged content.
+3. `git diff --stat` - summarise unstaged content.
 
 Refuse to proceed when:
-
 - The working tree is clean (nothing to commit).
-- The repository is in a rebase, merge, or cherry-pick state
-  (`.git/REBASE_HEAD`, `.git/MERGE_HEAD`, or `.git/CHERRY_PICK_HEAD`
-  exist). The user must resolve the in-progress operation first.
+- The repository is in a rebase, merge, or cherry-pick state. Resolve first.
 
 ---
 
-## Step 2: Secret and Forbidden-File Deny List
+## Step 2: Secret and Forbidden-File Scan
 
-For every staged path, refuse the commit when any path matches:
+For every staged path, refuse the commit when any staged file contains:
 
-- `.env`, `.env.*`
-- `*.pem`, `*.key`, `*.pfx`, `*.crt`, `*.p12`
-- `id_rsa*`, `id_ed25519*`
-- Any path under `infra/nginx/certs/`
-- Any path under `secrets/` or `private/`
-- Any file larger than 5 MB (likely an artifact or binary blob)
+**Pattern matches (case-insensitive):**
+- `sk-` (OpenAI key prefix)
+- `OPENAI_API_KEY=` followed by a non-empty value
+- `DATABASE_URL=` containing a password component
+- Any `.env` file staged directly (warn the user; `.env` should be in `.gitignore`)
+- Private key blocks: `-----BEGIN RSA PRIVATE KEY-----`, `-----BEGIN EC PRIVATE KEY-----`
 
-Additionally scan the staged diff for these substrings (case
-insensitive):
-
-- `BEGIN RSA PRIVATE KEY`
-- `BEGIN OPENSSH PRIVATE KEY`
-- `aws_secret_access_key`
-- `client_secret`
-- `xoxb-`, `xoxp-` (Slack tokens)
-
-On any match, stop and report the matching path or line range. The
-user must remove the file from the index (`git restore --staged`)
-before this skill proceeds.
+If any match is found, report the file and line and refuse to proceed until the secret is removed.
 
 ---
 
-## Step 3: Verify Test Evidence
+## Step 3: Propose Commit Grouping
 
-Look for a sibling test-evidence file under
-`.github/copilot-outputs/<branch>-*-test-evidence.md`.
+Inspect the staged diff and propose logical groupings:
 
-- If the file exists and contains the literal verdict line `Result:
-  PASS`, continue.
-- If the file is missing or its verdict is not `PASS`, warn the user
-  and require explicit acknowledgement (the user types
-  `acknowledge missing tests`) before proceeding. This is the
-  no-CI substitute for a build-validation status check.
+- Group by module scope (backend agents, rag, api, frontend, infra, tests, docs).
+- Suggest splitting into multiple commits if changes span unrelated scopes.
+- Present the proposed grouping to the user for approval before writing the message.
 
 ---
 
-## Step 4: Propose Commit Grouping
+## Step 4: Produce Commit Message
 
-When the staged set spans more than one logical concern, propose a
-grouping plan as numbered bundles with file lists. Wait for the user
-to choose one of:
+Follow `.github/git-commit-instructions.md`:
 
-- Accept the proposed grouping and stage one bundle at a time.
-- Provide an alternative grouping.
-- Commit everything as a single commit.
+```
+<type>(<scope>): <subject>
 
-Do not stage or unstage files automatically without approval.
+[optional body - explain WHY, not what; wrap at 72 chars]
 
----
-
-## Step 5: Compose Commit Message
-
-Follow `.github/git-commit-instructions.md` exactly:
-
-```text
-<story-or-task-id>: <human-readable description>
-
-* <change summary>
-* <change summary>
+[optional footer - Closes #N]
 ```
 
-Rules enforced:
+Valid types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `ci`
 
-- First line `<ID>: <description>`, no trailing punctuation.
-- Exactly one blank line before the bullet list.
-- Each bullet starts with `* ` and a single concise sentence.
-- No sub-bullets, no full stops at end of bullet lines.
-- No sign-off, co-author, or extra metadata unless the user asked
-  for it in the same turn.
+Valid scopes: `backend`, `agents`, `rag`, `parsing`, `api`, `db`, `services`, `tools`, `telemetry`, `frontend`, `infra`, `docs`, `tests`
+
+Rules:
+- Subject: imperative mood, no period, max 72 chars.
+- Never use the em dash; use a hyphen.
+- Never use ampersand; write "and".
+
+Present the proposed message to the user for approval before running `git commit`.
 
 ---
 
-## Step 6: Approval and Execution
+## Step 5: Execute with Confirmed-Terminal
 
-Print:
+Only after the user approves the message, present the final command for `confirmed-terminal` approval:
 
-```text
-Staged files:
-  <list>
-
-Commit message:
-  <message>
-
-Risk: MEDIUM
-  Local commit. Reversible only with `git reset --soft HEAD~1`
-  before push.
-
-Type YES to run `git commit -F <temp-message-file>`.
 ```
+Command to run:
+  git commit -m "<type>(<scope>): <subject>" -m "<body if any>"
 
-Run the commit only after the user types an approval matching the
-`confirmed-terminal` rules. Push is a separate, separately gated
-action and is not part of this skill.
+Purpose:
+  Commit staged changes with the approved commit message.
 
----
+Risk: LOW
+  Creates a local commit. Does not push to any remote.
 
-## Refusals
-
-- Never amend or squash existing commits unless the user requests
-  it in the same turn.
-- Never run `git commit --no-verify`.
-- Never silently retry after a failure.
-- Never commit when secret or forbidden-file checks fail.
+Type YES to run, NO to skip.
+```
