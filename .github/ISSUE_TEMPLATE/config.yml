@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project Jira
+    url: https://jira.critical.pt/browse/AIAPMMWP1
+    about: >-
+      Use the Jira project for all story and task tracking. Create issues
+      here only for bugs and feature requests that are not yet tracked in
+      Jira.
