@@ -20,6 +20,7 @@ opentelemetry-instrumentation-asgi==0.63b1
 opentelemetry-semantic-conventions==0.63b1
 opentelemetry-util-http==0.63b1
 httpx==0.28.1
+mcp[cli]>=1.0.0
 pytest==9.0.3
 pytest-asyncio==1.4.0
 aiosqlite>=0.20.0

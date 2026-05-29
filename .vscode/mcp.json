@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "type": "stdio"
+    },
+    "finsight": {
+      "command": "python",
+      "args": ["backend/mcp_server.py"],
+      "type": "stdio",
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
