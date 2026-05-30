@@ -1,0 +1,38 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+  # Add a resource attribute so every span is tagged with the service name
+  # even when the SDK doesn't set it explicitly.
+  resource:
+    attributes:
+      - key: service.namespace
+        value: finsight-ai
+        action: upsert
+
+exporters:
+  # Ship traces to Jaeger for visualisation.
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Debug exporter: prints spans to collector stdout (disable in prod).
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlp/jaeger, debug]

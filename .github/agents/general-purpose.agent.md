@@ -2,7 +2,7 @@
 name: General Purpose Agent
 description: "Handle any FinSight AI task that does not fit a specific technology domain: write scripts (Bash, Python, PowerShell), perform file manipulation, answer questions about any technology, produce ad-hoc tooling, or execute utility work. Keywords: script, bash, python, powershell, file edit, batch rename, utility, tool, generic, ad-hoc, automation, question, how to, explain, convert, parse, docker, infrastructure."
 argument-hint: "Describe the task - what you want done, what files or data are involved, and any constraints or output format requirements"
-tools: [read, edit, search, execute, fetch_webpage, todo]
+tools: [read, edit, search, execute, web, todo]
 user-invocable: true
 model: Claude Sonnet 4.6 (copilot)
 ---

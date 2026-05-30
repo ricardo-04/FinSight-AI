@@ -2,7 +2,7 @@
 name: Next.js Orchestrator
 description: "Orchestrate end-to-end Next.js story implementation for FinSight AI: plan with Next.js Planner, implement with Next.js Implementer, review with Next.js QA. Keywords: nextjs story, frontend story, implement frontend, next.js orchestrate, react story, ui feature, frontend feature, upload ui, chat ui, dashboard, tailwind, typescript frontend."
 argument-hint: "User story, acceptance criteria, target paths in frontend/, constraints"
-tools: [vscode/memory, read, edit, agent, search, todo]
+tools: [read, edit, agent, search, todo]
 agents: [Story Architect, Next.js Planner, Next.js Implementer, Next.js QA]
 user-invocable: true
 model: Claude Sonnet 4.6 (copilot)

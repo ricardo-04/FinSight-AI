@@ -2,7 +2,7 @@
 name: Python FastAPI Orchestrator
 description: "Orchestrate end-to-end Python FastAPI story implementation for FinSight AI: plan with Python FastAPI Planner, implement with Python FastAPI Implementer, review with Python FastAPI QA. Keywords: python story, fastapi story, backend story, implement backend, python orchestrate, backend feature, rag feature, agent feature, extraction, research, comparison, pdf, parsing, embeddings."
 argument-hint: "User story, acceptance criteria, target module path(s) in backend/, constraints"
-tools: [vscode/memory, read, edit, agent, search, todo]
+tools: [read, edit, agent, search, todo]
 agents: [Story Architect, Python FastAPI Planner, Python FastAPI Implementer, Python FastAPI QA]
 user-invocable: true
 model: Claude Sonnet 4.6 (copilot)

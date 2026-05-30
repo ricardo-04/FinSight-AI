@@ -2,7 +2,7 @@
 name: Story Orchestrator
 description: "Orchestrate an end-to-end FinSight AI story that spans multiple technology layers (backend and frontend). Coordinates planning, implementation, QA, and review subagents. Keywords: orchestrate story, end-to-end, full stack story, delegate plan, delegate implementation, run QA, cross-cutting feature."
 argument-hint: "User story to implement, tasks, acceptance criteria, scope, and constraints"
-tools: [vscode/memory, read, edit, agent, search, todo]
+tools: [read, edit, agent, search, todo]
 agents: [Story Architect, Story Planner, Story Implementer, Story QA and Review, Python FastAPI Orchestrator, Next.js Orchestrator]
 user-invocable: true
 model: Claude Sonnet 4.6 (copilot)

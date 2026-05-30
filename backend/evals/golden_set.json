@@ -1,0 +1,30 @@
+[
+  {
+    "id": "extract-revenue-keyword",
+    "type": "keyword",
+    "text": "Total revenue for the third quarter of 2024 was $92,995 million, compared with $93,210 million in the prior-year period. Net earnings attributable to shareholders were $26.3 billion.",
+    "expected": {
+      "revenue_contains": ["92", "995"],
+      "company_nonempty": true
+    }
+  },
+  {
+    "id": "extract-growth-computed",
+    "type": "keyword",
+    "text": "Acme Corp reported net sales of $1,200 million for fiscal 2025, up from $1,000 million in fiscal 2024. The company expects revenue of approximately $1,400 million next year.",
+    "expected": {
+      "revenue_contains": ["1", "200"],
+      "growth_nonempty": true,
+      "guidance_nonempty": true
+    }
+  },
+  {
+    "id": "extract-no-guidance",
+    "type": "keyword",
+    "text": "Quarterly revenue was $4.2 billion. The company does not provide forward-looking guidance. Risk factors include supply chain disruption and currency volatility.",
+    "expected": {
+      "revenue_contains": ["4", "2"],
+      "risks_min": 1
+    }
+  }
+]

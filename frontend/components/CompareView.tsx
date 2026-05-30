@@ -48,7 +48,6 @@ export default function CompareView({ documentIds }: CompareViewProps) {
             {result.documents.map((doc) => (
               <MetricsCard
                 key={doc.document_id}
-                documentId={doc.document_id}
                 filename={doc.filename || doc.document_id}
                 metrics={doc.metrics}
               />

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ticker-exact-match",
+    "query": "NVDA gross margin guidance",
+    "chunks": [
+      {
+        "id": "c1",
+        "text": "NVDA expects gross margin guidance of approximately 75% for the next fiscal quarter, driven by data center demand.",
+        "vector_score": 0.70,
+        "relevant": true
+      },
+      {
+        "id": "c2",
+        "text": "The company reported strong revenue growth in its gaming segment year over year.",
+        "vector_score": 0.74,
+        "relevant": false
+      },
+      {
+        "id": "c3",
+        "text": "Operating expenses increased due to research and development investments.",
+        "vector_score": 0.68,
+        "relevant": false
+      }
+    ]
+  },
+  {
+    "id": "line-item-name",
+    "query": "free cash flow for the quarter",
+    "chunks": [
+      {
+        "id": "c1",
+        "text": "Free cash flow for the quarter was $3.1 billion, up from $2.4 billion a year ago.",
+        "vector_score": 0.72,
+        "relevant": true
+      },
+      {
+        "id": "c2",
+        "text": "Cash and cash equivalents totaled $18 billion at period end.",
+        "vector_score": 0.73,
+        "relevant": false
+      },
+      {
+        "id": "c3",
+        "text": "The board approved a new share repurchase program.",
+        "vector_score": 0.60,
+        "relevant": false
+      }
+    ]
+  },
+  {
+    "id": "revenue-yoy",
+    "query": "total revenue year over year change",
+    "chunks": [
+      {
+        "id": "c1",
+        "text": "Total revenue increased 12% year over year to $24.9 billion this quarter.",
+        "vector_score": 0.71,
+        "relevant": true
+      },
+      {
+        "id": "c2",
+        "text": "Net income margin expanded by 200 basis points compared to the prior year.",
+        "vector_score": 0.69,
+        "relevant": false
+      },
+      {
+        "id": "c3",
+        "text": "Headcount grew modestly during the period across engineering teams.",
+        "vector_score": 0.55,
+        "relevant": false
+      }
+    ]
+  }
+]

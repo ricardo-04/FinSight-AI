@@ -24,3 +24,9 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local dev database
+*.db
+
+# Temp showcase recording artifacts
+docs/showcase/video_tmp/

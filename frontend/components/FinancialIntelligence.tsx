@@ -51,8 +51,8 @@ export default function FinancialIntelligence() {
         },
         ...prev.slice(0, 9), // Keep last 10
       ]);
-    } catch (err: any) {
-      setError(err.message || "Failed to analyze company.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to analyze company.");
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop"]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+
+jobs:
+  evals:
+    name: Deterministic eval suites
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Retrieval ranking suite
+        # Fully deterministic — no API keys needed.
+        run: python -m evals.run_evals --retrieval
+
+      - name: Groundedness suite
+        # Fully deterministic — no API keys needed.
+        run: python -m evals.run_evals --groundedness
+
+  lint:
+    name: Lint & type check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ruff (lint + format check)
+        # ruff is fast, zero-config for most projects.
+        run: |
+          pip install ruff --quiet
+          ruff check app/ evals/ --select E,F,W,I --ignore E501
+
+  unit-tests:
+    name: Unit tests (no LLM / no DB)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest (unit tests only)
+        env:
+          DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+          NVIDIA_API_KEY: "dummy"  # prevents import-time errors; tests are mocked
+        run: pytest tests/ -v --timeout=30 -m "not integration"

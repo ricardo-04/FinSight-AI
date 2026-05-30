@@ -73,13 +73,17 @@ def _get_agent() -> "Agent[None, FinancialMetrics]":
     return _agent
 
 
-async def run_extraction(text: str) -> FinancialMetrics:
+async def run_extraction(text: str, max_length: int | None = None) -> FinancialMetrics:
     """Extract structured financial metrics from *text*.
 
     Args:
         text: Raw text from a parsed PDF document or a concatenated set of
             chunks. Will be sanitized and truncated before being sent to
             the LLM.
+        max_length: Maximum number of characters to send to the LLM. Defaults
+            to the EXTRACTION_MAX_INPUT_LENGTH env var (falling back to
+            MAX_PROMPT_INPUT_LENGTH) so long filings keep enough room for the
+            financial statements after the cover page.
 
     Returns:
         A FinancialMetrics instance. Fields not found in the text are empty
@@ -89,7 +93,11 @@ async def run_extraction(text: str) -> FinancialMetrics:
         RuntimeError: If the LLM fails after all retries and returns an
             unusable response.
     """
-    max_length = int(os.getenv("MAX_PROMPT_INPUT_LENGTH", "8000"))
+    if max_length is None:
+        max_length = int(
+            os.getenv("EXTRACTION_MAX_INPUT_LENGTH")
+            or os.getenv("MAX_PROMPT_INPUT_LENGTH", "8000")
+        )
     sanitized = text.strip().replace("\x00", "")[:max_length]
 
     if not sanitized:

@@ -13,6 +13,10 @@ router = APIRouter()
 
 _MAX_FILE_SIZE_BYTES: int = 50 * 1024 * 1024  # 50 MB
 _ALLOWED_CONTENT_TYPES: set[str] = {"application/pdf"}
+# Every valid PDF begins with the "%PDF-" magic signature. Validating the bytes
+# (not just the client-supplied Content-Type) prevents a mislabeled or malicious
+# non-PDF payload from reaching the parser.
+_PDF_MAGIC: bytes = b"%PDF-"
 
 
 class UploadResponse(BaseModel):
@@ -25,8 +29,8 @@ class UploadResponse(BaseModel):
 async def upload_pdf(file: UploadFile = File(...)) -> UploadResponse:
     """Upload a PDF document, parse it, and ingest it into the vector store.
 
-    Validates MIME type and file size before processing. Returns the assigned
-    document ID which can be used in subsequent extract and chat requests.
+    Validates MIME type, byte signature and file size before processing. Returns
+    the assigned document ID which can be used in subsequent requests.
     """
     if file.content_type not in _ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -43,6 +47,13 @@ async def upload_pdf(file: UploadFile = File(...)) -> UploadResponse:
         raise HTTPException(
             status_code=400,
             detail=f"File exceeds maximum allowed size of {_MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB.",
+        )
+
+    # Defense in depth: trust the bytes, not the declared Content-Type.
+    if not content[:1024].lstrip().startswith(_PDF_MAGIC):
+        raise HTTPException(
+            status_code=400,
+            detail="File content is not a valid PDF (missing %PDF- signature).",
         )
 
     logger.info(

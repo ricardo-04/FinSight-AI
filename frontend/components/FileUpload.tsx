@@ -7,6 +7,8 @@ interface FileUploadProps {
   onUploaded: (response: UploadResponse) => void;
 }
 
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
 export default function FileUpload({ onUploaded }: FileUploadProps) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -16,6 +18,10 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
   async function handleFile(file: File) {
     if (file.type !== "application/pdf") {
       setError("Only PDF files are accepted.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setError("File exceeds the maximum size of 50 MB.");
       return;
     }
     setError(null);
@@ -44,14 +50,25 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upload a PDF. Drop a file here or press Enter to browse."
+      aria-busy={uploading}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
       className={`
         border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
-        ${dragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}
+        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+        ${dragging ? "border-indigo-500 bg-indigo-50" : "border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-indigo-50/40"}
       `}
-      onClick={() => inputRef.current?.click()}
     >
       <input
         ref={inputRef}
@@ -61,19 +78,19 @@ export default function FileUpload({ onUploaded }: FileUploadProps) {
         onChange={onFileChange}
       />
       {uploading ? (
-        <p className="text-gray-500 animate-pulse">Uploading & processing...</p>
+        <p className="text-slate-500 animate-pulse">Uploading & processing...</p>
       ) : (
         <>
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="mx-auto h-11 w-11 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
           </svg>
-          <p className="mt-2 text-sm text-gray-600">
-            Drop a PDF here or <span className="text-blue-600 font-medium">browse</span>
+          <p className="mt-2 text-sm text-slate-600">
+            Drop a PDF here or <span className="text-indigo-600 font-medium">browse</span>
           </p>
-          <p className="mt-1 text-xs text-gray-400">Max 50 MB</p>
+          <p className="mt-1 text-xs text-slate-400">Max 50 MB</p>
         </>
       )}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-600" role="alert">{error}</p>}
     </div>
   );
 }

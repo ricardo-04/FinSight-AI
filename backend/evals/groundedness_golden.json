@@ -1,0 +1,27 @@
+[
+  {
+    "id": "grounded-revenue",
+    "context": [
+      "Berkshire Hathaway reported total revenue of $92.5 billion for the third quarter of 2024.",
+      "Operating earnings were $10.1 billion, up from $9.0 billion a year earlier."
+    ],
+    "answer": "In Q3 2024, total revenue was $92.5 billion and operating earnings reached $10.1 billion.",
+    "expected": { "grounded": true }
+  },
+  {
+    "id": "hallucinated-number",
+    "context": [
+      "Berkshire Hathaway reported total revenue of $92.5 billion for the third quarter of 2024."
+    ],
+    "answer": "Total revenue for the quarter was $105.7 billion, a clear record.",
+    "expected": { "grounded": false }
+  },
+  {
+    "id": "grounded-qualitative",
+    "context": [
+      "Key risks include changes in market prices of equity securities and the occurrence of catastrophic events such as hurricanes or cyber-attacks."
+    ],
+    "answer": "The main risks are swings in equity prices and catastrophic events like hurricanes or cyber-attacks.",
+    "expected": { "grounded": true }
+  }
+]

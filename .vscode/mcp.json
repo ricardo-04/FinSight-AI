@@ -6,10 +6,10 @@
       "type": "stdio"
     },
     "finsight": {
-      "command": "python",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
       "args": ["backend/mcp_server.py"],
       "type": "stdio",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}/finsight-ai"
     }
   }
 }

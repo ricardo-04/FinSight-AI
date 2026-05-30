@@ -1,4 +1,10 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
+
+/** Merge the API-key header (when configured) into request headers. */
+function withAuth(headers: Record<string, string> = {}): Record<string, string> {
+  return API_KEY ? { ...headers, "X-API-Key": API_KEY } : headers;
+}
 
 export interface UploadResponse {
   document_id: string;
@@ -43,7 +49,7 @@ export interface CompareResponse {
   analysis: string;
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
     super(message);
@@ -65,14 +71,26 @@ export async function uploadPdf(file: File): Promise<UploadResponse> {
 
   const res = await fetch(`${API_BASE}/api/upload/`, {
     method: "POST",
+    headers: withAuth(),
     body: formData,
   });
   return handleResponse<UploadResponse>(res);
 }
 
+export interface DocumentInfo {
+  document_id: string;
+  filename: string;
+}
+
+export async function listDocuments(): Promise<DocumentInfo[]> {
+  const res = await fetch(`${API_BASE}/api/documents/`, { headers: withAuth() });
+  return handleResponse<DocumentInfo[]>(res);
+}
+
 export async function extractMetrics(documentId: string): Promise<ExtractionResponse> {
   const res = await fetch(`${API_BASE}/api/extract/${documentId}`, {
     method: "POST",
+    headers: withAuth(),
   });
   return handleResponse<ExtractionResponse>(res);
 }
@@ -83,16 +101,108 @@ export async function chat(
 ): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/api/chat/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ question, document_ids: documentIds }),
   });
   return handleResponse<ChatResponse>(res);
 }
 
+export interface AnalystResponse {
+  answer: string;
+  tools_used: string[];
+  conversation_id: string;
+}
+
+export async function runAnalyst(
+  question: string,
+  documentIds: string[] = [],
+  conversationId?: string
+): Promise<AnalystResponse> {
+  const res = await fetch(`${API_BASE}/api/analyst/`, {
+    method: "POST",
+    headers: withAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      question,
+      document_ids: documentIds,
+      conversation_id: conversationId ?? null,
+    }),
+  });
+  return handleResponse<AnalystResponse>(res);
+}
+
+export interface AnalystStreamHandlers {
+  onDelta: (text: string) => void;
+  onDone: (info: { tools_used: string[]; conversation_id: string }) => void;
+  onError?: (message: string) => void;
+}
+
+/**
+ * Stream the analyst agent's answer via Server-Sent Events. Calls `onDelta`
+ * for each incremental chunk of text, then `onDone` with the tools used and the
+ * conversation id to reuse on the next turn.
+ */
+export async function streamAnalyst(
+  question: string,
+  documentIds: string[] = [],
+  conversationId: string | undefined,
+  handlers: AnalystStreamHandlers
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/analyst/stream`, {
+    method: "POST",
+    headers: withAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      question,
+      document_ids: documentIds,
+      conversation_id: conversationId ?? null,
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const message = `Request failed with status ${res.status}`;
+    handlers.onError?.(message);
+    throw new ApiError(res.status, message);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  // Parse the SSE stream frame by frame (frames separated by a blank line).
+  // Each frame has an `event:` line and a `data:` line with a JSON payload.
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let sep: number;
+    while ((sep = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+
+      let event = "message";
+      let data = "";
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        else if (line.startsWith("data:")) data += line.slice(5).trim();
+      }
+      if (!data) continue;
+
+      try {
+        const parsed = JSON.parse(data);
+        if (event === "delta") handlers.onDelta(parsed.text ?? "");
+        else if (event === "done") handlers.onDone(parsed);
+        else if (event === "error") handlers.onError?.(parsed.message ?? "Stream failed.");
+      } catch {
+        // Ignore malformed frames.
+      }
+    }
+  }
+}
+
 export async function compareDocuments(documentIds: string[]): Promise<CompareResponse> {
   const res = await fetch(`${API_BASE}/api/compare/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ document_ids: documentIds }),
   });
   return handleResponse<CompareResponse>(res);
@@ -134,7 +244,7 @@ export interface FinancialAnalysisResponse {
 export async function analyzeCompany(query: string): Promise<FinancialAnalysisResponse> {
   const res = await fetch(`${API_BASE}/api/financial/analyze`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ query }),
   });
   return handleResponse<FinancialAnalysisResponse>(res);
