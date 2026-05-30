@@ -2,9 +2,9 @@ import logging
 import os
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,9 @@ def setup_telemetry(app):
 
     if _OTEL_ENDPOINT:
         try:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                OTLPSpanExporter,
+            )
             provider.add_span_processor(
                 BatchSpanProcessor(OTLPSpanExporter(endpoint=_OTEL_ENDPOINT))
             )

@@ -13,7 +13,6 @@ Three levels, following the Kubernetes probe convention:
   instance should *receive requests*. Returns 503 if any dependency is unhealthy.
 """
 import logging
-import os
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -38,6 +37,7 @@ async def readiness():
     # --- Database -----------------------------------------------------------
     try:
         from sqlalchemy import text
+
         from app.db.session import engine
 
         async with engine.connect() as conn:
@@ -49,7 +49,7 @@ async def readiness():
         healthy = False
 
     # --- Redis (optional) ---------------------------------------------------
-    from app.cache.redis_client import redis_configured, get_redis
+    from app.cache.redis_client import get_redis, redis_configured
 
     if redis_configured():
         client = get_redis()

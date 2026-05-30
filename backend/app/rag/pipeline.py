@@ -14,6 +14,7 @@ from opentelemetry import trace
 
 from app.db.session import DATABASE_URL
 from app.models.document import DocumentChunk
+from app.rag.embeddings import embed_chunks
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +58,6 @@ async def ingest_document(
         )
 
         if _USE_PGVECTOR:
-            from app.rag.embeddings import embed_chunks
             embeddings = await embed_chunks(chunks)
         else:
             # SQLite dev mode: skip embedding generation

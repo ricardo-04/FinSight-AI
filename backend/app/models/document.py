@@ -1,7 +1,7 @@
 import os
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
 
 from app.db.base import Base
 

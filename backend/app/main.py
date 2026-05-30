@@ -1,20 +1,31 @@
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Configure structured logging before any other module emits a log record.
-from app.telemetry.logging import configure_logging
+from app.telemetry.logging import configure_logging  # noqa: E402
+
 configure_logging()
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from app.api import health, upload, extract, chat, compare, financial, documents, analyst
-from app.api.auth import ApiKeyMiddleware
-from app.api.rate_limit import RateLimitMiddleware
-from app.db.session import init_db
-from app.telemetry.setup import setup_telemetry
+from app.api import (  # noqa: E402
+    analyst,
+    chat,
+    compare,
+    documents,
+    extract,
+    financial,
+    health,
+    upload,
+)
+from app.api.auth import ApiKeyMiddleware  # noqa: E402
+from app.api.rate_limit import RateLimitMiddleware  # noqa: E402
+from app.db.session import init_db  # noqa: E402
+from app.telemetry.setup import setup_telemetry  # noqa: E402
 
 
 @asynccontextmanager

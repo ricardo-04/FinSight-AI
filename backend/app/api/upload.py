@@ -2,7 +2,6 @@ import logging
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
 from app.services.document_service import save_document

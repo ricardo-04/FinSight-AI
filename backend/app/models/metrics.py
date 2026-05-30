@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, ForeignKey, String
+
 from app.db.base import Base
+
 
 class FinancialMetric(Base):
     __tablename__ = "financial_metrics"

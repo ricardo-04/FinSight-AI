@@ -127,9 +127,10 @@ class TestRetrieve:
         mock_result = MagicMock()
         mock_result.fetchall.return_value = [fake_row]
 
-        with patch("app.rag.retrieval.embed_query", new=AsyncMock(return_value=[0.1] * 1024)):
-            with patch.object(db_session, "execute", new=AsyncMock(return_value=mock_result)):
-                results = await retrieve("revenue?", db_session)
+        with patch("app.rag.retrieval._USE_PGVECTOR", True):
+            with patch("app.rag.retrieval.embed_query", new=AsyncMock(return_value=[0.1] * 1024)):
+                with patch.object(db_session, "execute", new=AsyncMock(return_value=mock_result)):
+                    results = await retrieve("revenue?", db_session)
 
         assert len(results) == 1
         assert results[0]["document_id"] == "doc-abc"
@@ -160,8 +161,9 @@ class TestRetrieve:
         mock_result.fetchall.return_value = []
         mock_embed = AsyncMock(return_value=[0.1] * 1024)
 
-        with patch("app.rag.retrieval.embed_query", new=mock_embed):
-            with patch.object(db_session, "execute", new=AsyncMock(return_value=mock_result)):
-                await retrieve("What is revenue?", db_session)
+        with patch("app.rag.retrieval._USE_PGVECTOR", True):
+            with patch("app.rag.retrieval.embed_query", new=mock_embed):
+                with patch.object(db_session, "execute", new=AsyncMock(return_value=mock_result)):
+                    await retrieve("What is revenue?", db_session)
 
         mock_embed.assert_called_once()

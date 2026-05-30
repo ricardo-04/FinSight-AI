@@ -3,7 +3,11 @@ import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.agents.comparison_agent import ComparisonResult, DocumentMetrics, run_comparison
+from app.agents.comparison_agent import (
+    ComparisonResult,
+    DocumentMetrics,
+    run_comparison,
+)
 from app.db.session import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
