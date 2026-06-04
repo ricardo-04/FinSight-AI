@@ -2,7 +2,7 @@
 
 > AI-powered financial intelligence platform — ingest financial PDFs (earnings reports, SEC filings, investor decks), extract structured metrics with LLMs, and analyse them through a Retrieval-Augmented Generation (RAG) chat, an autonomous tool-calling agent, and a live-market Financial Intelligence terminal.
 
-![Financial Intelligence Terminal](docs/showcase/screenshots/06-financial-intelligence.png)
+![FinSight AI — Landing Page](docs/showcase/screenshots/01-landing-page.png)
 
 ---
 
@@ -45,18 +45,25 @@ FinSight AI turns a raw financial PDF into actionable intelligence through four 
 
 ## Demo (video + screenshots)
 
-- 🎥 **Full workflow recording:** [`docs/showcase/video/finsight-workflow.webm`](docs/showcase/video/finsight-workflow.webm) — uncut end-to-end run: upload → extract → RAG chat → agent mode → Financial Intelligence.
+- 🎥 **Full workflow recording (WebP/animated):** [`docs/showcase/video/finsight-workflow.webp`](docs/showcase/video/finsight-workflow.webp) — live end-to-end session: upload → extract → RAG chat → agent mode → Financial Intelligence.
+- 🎬 **Original recording (WebM):** [`docs/showcase/video/finsight-workflow.webm`](docs/showcase/video/finsight-workflow.webm)
 - 🖼️ **Screenshots:** [`docs/showcase/screenshots/`](docs/showcase/screenshots/)
 
-| Upload a PDF | Extraction → metrics | RAG chat with citations |
-|---|---|---|
-| ![upload](docs/showcase/screenshots/01-upload.png) | ![extracted metrics](docs/showcase/screenshots/02-extracted-metrics.png) | ![chat rag](docs/showcase/screenshots/03-chat-rag.png) |
+### Live session — Apple 10-Q Q1 2025
 
-| Agent mode explained | Agent mode in action | Financial Intelligence |
-|---|---|---|
-| ![agent mode help](docs/showcase/screenshots/04-agent-mode-help.png) | ![agent mode](docs/showcase/screenshots/05-agent-mode.png) | ![financial intelligence](docs/showcase/screenshots/06-financial-intelligence.png) |
+Screenshots captured during a live run with an Apple 10-Q filing:
 
-The agent-mode pair is the most telling. With the toggle **off**, the chat answers as standard RAG, grounded only in the uploaded document and citing its sources. Hovering the help icon (screenshot 04) explains the difference; flipping the toggle **on** (screenshot 05) lets the analyst agent autonomously call tools such as `get_company_financials` to fetch **live market data for the same company in the PDF** — here Berkshire Hathaway's current sector, industry and ~$1.02T market cap, none of which is in the document — and the answer shows the **Tools:** badges it used. Same UI, two grounding strategies.
+| App landing page | PDF uploaded + Extract button | Extracted metrics panel |
+|---|---|---|
+| ![landing page](docs/showcase/screenshots/01-landing-page.png) | ![upload](docs/showcase/screenshots/02-upload.png) | ![extracted metrics](docs/showcase/screenshots/03-extracted-metrics.png) |
+
+> **Extracted by the AI:** Company = Apple Inc. · Revenue = $124,306M · YoY Growth = **+3.95%** · 5 key risks identified automatically.
+
+| Metrics detail (with Key Risks) | Chat scoped to document | Agent Mode toggle visible |
+|---|---|---|
+| ![metrics detail](docs/showcase/screenshots/04-extracted-metrics-detail.png) | ![chat rag](docs/showcase/screenshots/05-chat-rag.png) | ![agent mode](docs/showcase/screenshots/06-agent-mode.png) |
+
+The agent-mode pair is the most telling. With the toggle **off**, the chat answers as standard RAG, grounded only in the uploaded document and citing its sources. Flipping the toggle **on** lets the analyst agent autonomously call tools such as `get_company_financials` to fetch **live market data for the same company in the PDF** and combine it with the retrieved context — and the answer shows the **Tools:** badges it used. Same UI, two grounding strategies.
 
 ---
 
