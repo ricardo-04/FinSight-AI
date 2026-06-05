@@ -2,12 +2,34 @@
 
 > AI-powered financial intelligence platform — ingest financial PDFs (earnings reports, SEC filings, investor decks), extract structured metrics with LLMs, and analyse them through a Retrieval-Augmented Generation (RAG) chat, an autonomous tool-calling agent, and a live-market Financial Intelligence terminal.
 
+<!-- CI & Quality -->
+[![CI](https://github.com/ricardo-04/FinSight-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/ricardo-04/FinSight-AI/actions/workflows/ci.yml)
+[![Ruff](https://img.shields.io/badge/linter-ruff-blue?logo=python&logoColor=white)](https://docs.astral.sh/ruff/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+<!-- AI & Core Stack -->
+[![PydanticAI](https://img.shields.io/badge/agents-PydanticAI-e92063?logo=pydantic&logoColor=white)](https://ai.pydantic.dev/)
+[![NVIDIA NIM](https://img.shields.io/badge/LLM-NVIDIA%20NIM-76b900?logo=nvidia&logoColor=white)](https://build.nvidia.com/)
+[![RAG](https://img.shields.io/badge/retrieval-RAG%20%2B%20pgvector-4285f4?logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![MCP](https://img.shields.io/badge/protocol-MCP%20%28FastMCP%29-7c3aed)](https://modelcontextprotocol.io/)
+
+<!-- Web & Infra -->
+[![Next.js](https://img.shields.io/badge/frontend-Next.js%2014-black?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/infra-Docker%20Compose-2496ed?logo=docker&logoColor=white)](https://www.docker.com/)
+[![OpenTelemetry](https://img.shields.io/badge/observability-OpenTelemetry-f5a623?logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
+
+---
+
 ![FinSight AI — Landing Page](docs/showcase/screenshots/01-landing-page.png)
 
 ---
 
 ## Table of contents
 
+- [Why I built this](#why-i-built-this)
+- [What I learned](#what-i-learned)
 - [What it does](#what-it-does)
 - [Demo (video + screenshots)](#demo-video--screenshots)
 - [Architecture](#architecture)
@@ -27,6 +49,47 @@
 - [API surface](#api-surface)
 - [Configuration](#configuration)
 - [Security notes](#security-notes)
+
+---
+
+## Why I built this
+
+Financial documents — 10-Qs, 10-Ks, earnings decks — are dense, inconsistent, and buried behind reading hundreds of pages of regulatory prose. I built FinSight AI as a hands-on vehicle to go deep on the emerging AI engineering stack: **agentic AI, RAG, and the Model Context Protocol (MCP)**.
+
+The domain is intentionally hard. A Berkshire Hathaway 10-Q is ~227k characters across 69 chunks; a naive retriever never reaches the income statement on page 40. That constraint forced me to design real solutions — chunk prioritisation by financial-keyword density, guardrailed tool loops, streaming SSE, circuit breakers — rather than toy examples.
+
+The goal was to build something I'd actually use, that showcases every layer of the modern AI engineering stack from the LLM call to the production infra.
+
+---
+
+## What I learned
+
+Building FinSight AI from the ground up was my deepest dive yet into applied AI engineering. Here are the key lessons that shaped the final design:
+
+### 🤖 Agentic AI & multi-step reasoning
+Autonomous agents are compelling but need **explicit guardrails** to be safe to ship. Unbounded tool loops can silently blow through token budgets and rate limits. I wired `UsageLimits` (max requests + max tool calls), per-tool `asyncio.wait_for` timeouts, and output truncation to keep every agent run predictable and cost-bounded — without sacrificing the ability to do genuine multi-step reasoning.
+
+### 📚 RAG is not just vector search
+Retrieval quality makes or breaks a grounded LLM answer. I learned that:
+- **Chunking strategy matters** — overlapping windows preserve context at boundaries.
+- **Chunk prioritisation is essential for long docs** — ranking by financial-keyword density before feeding to the extractor made the difference between finding Apple's revenue and finding the cover page.
+- **Hybrid retrieval** (semantic + BM25-style signals) is worth the complexity at production scale.
+- The SQLite fallback (cosine similarity in Python) let me develop and test the entire RAG pipeline without a running Postgres instance.
+
+### 🔌 Model Context Protocol (MCP)
+MCP is a genuinely elegant protocol for exposing tool capabilities to any LLM client. Building a standalone `stdio` server with **FastMCP** taught me how tool schemas, argument validation, and session lifecycle work under the hood — and how the same backend tools can serve both a web UI and an IDE copilot without duplication.
+
+### 🏗️ LLM provider abstraction
+Swapping providers mid-project (NVIDIA NIM → Ollama → OpenAI) is painful without a clean seam. I built a single `llm_provider.py` module that presents an OpenAI-compatible interface regardless of what's underneath. This let me switch models for cost/latency experiments with a single env var change.
+
+### 📡 Observability is not optional for AI systems
+LLM calls are black boxes. Without **OpenTelemetry spans** wrapping every agent run and tool call, debugging a bad answer means guessing. Structured JSON logs with injected `trace_id` let me correlate a frontend error directly to the retrieval span that returned zero results — invaluable for iterating on the RAG pipeline.
+
+### ⚙️ Production hardening for AI APIs
+AI endpoints have unique failure modes: rate limits from upstream providers, expensive tokens, slow model inference. I implemented a **FMP circuit breaker** (opens after 5 failures, 30s cooldown), **Redis-backed rate limiting**, and **graceful degradation** throughout — so the app stays useful even when an upstream service is flaky.
+
+### 🧪 Evaluating AI without live LLMs
+I wrote deterministic eval suites (Recall@K, MRR, groundedness checks) that run in CI **without any API keys**. This was a forcing function for good architecture: the retrieval and grounding logic had to be unit-testable in isolation, which made them cleaner by design.
 
 ---
 
@@ -56,6 +119,7 @@ Screenshots captured during a live run with an Apple 10-Q filing:
 | App landing page | PDF uploaded + Extract button | Extracted metrics panel |
 |---|---|---|
 | ![landing page](docs/showcase/screenshots/01-landing-page.png) | ![upload](docs/showcase/screenshots/02-upload.png) | ![extracted metrics](docs/showcase/screenshots/03-extracted-metrics.png) |
+
 
 > **Extracted by the AI:** Company = Apple Inc. · Revenue = $124,306M · YoY Growth = **+3.95%** · 5 key risks identified automatically.
 
@@ -258,7 +322,7 @@ Project Manager → {domain} Orchestrator → Planner → Implementer → QA
 |---|---|
 | Frontend | Next.js 14, React, TailwindCSS, TypeScript |
 | Backend | FastAPI, Python 3.12, SQLAlchemy (async) |
-| AI | PydanticAI, OpenAI-compatible LLMs (NVIDIA NIM default) |
+| AI / Agents | PydanticAI, OpenAI-compatible LLMs (NVIDIA NIM default) |
 | Vector store | PostgreSQL + pgvector (prod) · SQLite + JSON cosine (dev) |
 | Cache / memory | Redis |
 | Live data | Financial Modeling Prep (FMP) |
@@ -386,3 +450,11 @@ Compose brings up frontend, backend, PostgreSQL+pgvector, Redis, the OpenTelemet
 ## Architecture deep-dive
 
 See [`docs/architecture/overview.md`](docs/architecture/overview.md) and the [technical report](docs/showcase/TECHNICAL_REPORT.md).
+
+---
+
+<div align="center">
+
+Built by **Ricardo** · [GitHub](https://github.com/ricardo-04) · Showcasing applied AI engineering: agentic systems, RAG pipelines, and the Model Context Protocol.
+
+</div>
